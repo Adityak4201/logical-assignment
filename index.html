@@ -22,28 +22,56 @@
       tr:nth-child(even) {
         background-color: #dddddd;
       }
+
+      .d-flex {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
+
+      .fs-20 {
+        font-size: 20px;
+        min-width: 220px;
+        text-align: center;
+        margin: 10px;
+      }
     </style>
   </head>
   <body>
-    <div>
+    <div class="d-flex">
       <input
-        type="text"
-        value=""
-        id="#product"
-        placeholder="Enter product code"
+        type="button"
+        value="Remove Quantity"
+        id="remove-R01"
+        onclick="removeCartItems('R01')"
       />
-      <input type="button" value="Submit" onclick="addCartItems()" />
+      <span class="fs-20">Red Diaper - Price: 32.95</span>
+      <input type="button" value="Add Quantity" onclick="addCartItems('R01')" />
+    </div>
+    <div class="d-flex">
+      <input
+        type="button"
+        value="Remove Quantity"
+        id="remove-G01"
+        onclick="removeCartItems('G01')"
+      />
+      <span class="fs-20">Green Diaper - Price: 24.95</span>
+      <input type="button" value="Add Quantity" onclick="addCartItems('G01')" />
+    </div>
+    <div class="d-flex">
+      <input
+        type="button"
+        value="Remove Quantity"
+        id="remove-B01"
+        onclick="removeCartItems('B01')"
+      />
+      <span class="fs-20">Blue Diaper - Price: 7.95</span>
+      <input type="button" value="Add Quantity" onclick="addCartItems('B01')" />
     </div>
     <br /><br />
     <div id="cart"></div>
   </body>
   <script>
-    // const getProductDetails = async () => {
-    //   const response = await fetch("./product.json");
-    //   const productDetails = response.json();
-    //   return productDetails;
-    // };
-
     class cartItemInterface {
       #cartDetails = {
         items: {},
@@ -114,20 +142,52 @@
             price: productInfo.PRICE,
           };
         }
-        this.#calculateCartTotal(productInfo, productCode);
+        this.#calculateCartTotal(productInfo, productCode, "add");
       }
 
-      #calculateCartTotal(productInfo, productCode) {
+      removeItemFromCart(productCode) {
+        const productInfo = this.#productDetails[productCode];
+        if (this.#cartDetails.items[productCode]) {
+          this.#cartDetails.items[productCode] = {
+            ...this.#cartDetails.items[productCode],
+            quantity:
+              this.#cartDetails.items[productCode].quantity - 1 >= 0
+                ? this.#cartDetails.items[productCode].quantity - 1
+                : 0,
+          };
+        }
+
+        this.#calculateCartTotal(productInfo, productCode, "remove");
+      }
+
+      #calculateCartTotal(productInfo, productCode, action) {
         if (productCode === "R01") {
-          this.#cartDetails.redDiaperCount += 1;
-          this.#cartDetails.itemsTotal += this.#applyOffer(
-            this.#cartDetails.redDiaperCount,
-            this.#productDetails.R01.PRICE
-          );
+          if (action === "add") {
+            this.#cartDetails.redDiaperCount += 1;
+            this.#cartDetails.itemsTotal += this.#applyOffer(
+              this.#cartDetails.redDiaperCount,
+              this.#productDetails.R01.PRICE
+            );
+          } else {
+            this.#cartDetails.itemsTotal -= this.#applyOffer(
+              this.#cartDetails.redDiaperCount,
+              this.#productDetails.R01.PRICE
+            );
+            this.#cartDetails.redDiaperCount =
+              this.#cartDetails.redDiaperCount - 1 >= 0
+                ? this.#cartDetails.redDiaperCount - 1
+                : 0;
+          }
         } else {
-          this.#cartDetails.itemsTotal = parseFloat(
-            (this.#cartDetails.itemsTotal + productInfo.PRICE).toFixed(2)
-          );
+          if (action === "add") {
+            this.#cartDetails.itemsTotal = parseFloat(
+              (this.#cartDetails.itemsTotal + productInfo.PRICE).toFixed(2)
+            );
+          } else {
+            this.#cartDetails.itemsTotal = parseFloat(
+              (this.#cartDetails.itemsTotal - productInfo.PRICE).toFixed(2)
+            );
+          }
         }
         const deliveryFees = this.#deliveryFeesRules(
           this.#cartDetails.itemsTotal
@@ -136,37 +196,19 @@
       }
     }
 
-    // const cartItemInterfaceAjax = function (url) {
-    //   this.url = url;
-    // };
-    // const cartItemInterfaceCookie = function () {};
-    // //Extend the cartItemInterface for Ajax
-    // cartItemInterfaceAjax.prototype = Object.create(cartItemInterface);
-    // //Extend the cartItemInterface for Cookie
-    // cartItemInterfaceCookie.prototype = Object.create(cartItemInterface);
-    // cartItemInterfaceAjax.prototype.addItem = function (item) {
-    //   //actual add item code
-    // };
-    // cartItemInterfaceCookie.prototype.addItem = function (item) {
-    //   //actual add item code
-    // };
-    // console.log(cartItemInterfaceAjax, cartItemInterfaceCookie.prototype);
-
-    // const cartController = function (cart) {
-    //   this.cart = cart;
-    // };
-
-    // cartController.prototype.add = function (item) {
-    //   cart.addItem(item);
-    // };
-
-    // const cart = new cartItemInterfaceAjax("url");
-    // const cartDetail = new cartController(cart);
-    // console.log(cart, cartDetail);
     const cart = new cartItemInterface();
-    const addCartItems = () => {
-      const productCode = document.getElementById("#product").value;
+
+    const addCartItems = (productCode) => {
       cart.addItemToCart(productCode);
+      generateTable(productCode);
+    };
+
+    const removeCartItems = (productCode) => {
+      cart.removeItemFromCart(productCode);
+      generateTable(productCode);
+    };
+
+    const generateTable = (productCode) => {
       let html = `<h1>Cart Details</h1>
                   <table>
                     <tr>
@@ -175,38 +217,47 @@
                       <th>Price</th>
                     <tr>`;
       const cartDetails = cart.getCartDetails();
-      console.log(cartDetails);
+      let isCartEmpty = true;
       for (const productCode in cartDetails.items) {
-        let productAggregatePrice = (
-          cartDetails.items[productCode].price *
-          cartDetails.items[productCode].quantity
-        ).toFixed(2);
-        if (productCode === "R01" && cartDetails.redDiaperCount > 1) {
-          if (cartDetails.redDiaperCount % 2 === 0) {
-            productAggregatePrice = (
-              cartDetails.items[productCode].price *
-                (cartDetails.redDiaperCount / 2) +
-              (cartDetails.items[productCode].price *
-                cartDetails.redDiaperCount) /
-                4
-            ).toFixed(2);
-          } else {
-            productAggregatePrice = (
-              (cartDetails.items[productCode].price *
-                (cartDetails.redDiaperCount + 1)) /
-                2 +
-              (cartDetails.items[productCode].price *
-                (cartDetails.redDiaperCount - 1)) /
-                4
-            ).toFixed(2);
+        if (cartDetails.items[productCode].quantity) {
+          isCartEmpty = false;
+          let productAggregatePrice = (
+            cartDetails.items[productCode].price *
+            cartDetails.items[productCode].quantity
+          ).toFixed(2);
+          if (productCode === "R01" && cartDetails.redDiaperCount > 1) {
+            if (cartDetails.redDiaperCount % 2 === 0) {
+              productAggregatePrice = (
+                cartDetails.items[productCode].price *
+                  (cartDetails.redDiaperCount / 2) +
+                (cartDetails.items[productCode].price *
+                  cartDetails.redDiaperCount) /
+                  4
+              ).toFixed(2);
+            } else {
+              productAggregatePrice = (
+                (cartDetails.items[productCode].price *
+                  (cartDetails.redDiaperCount + 1)) /
+                  2 +
+                (cartDetails.items[productCode].price *
+                  (cartDetails.redDiaperCount - 1)) /
+                  4
+              ).toFixed(2);
+            }
           }
-        }
-        html += `<tr>
+
+          html += `<tr>
                   <td>${cartDetails.items[productCode].name}</td>
                   <td>${cartDetails.items[productCode].quantity}</td>
                   <td>${productAggregatePrice}</td>
                 </tr>`;
+          document.getElementById(`remove-${productCode}`).disabled = false;
+        } else {
+          document.getElementById(`remove-${productCode}`).disabled = true;
+        }
       }
+
+      console.log(cartDetails);
       html += `<tr>
                 <td></td>
                 <td>Delivery Charges</td>
@@ -220,10 +271,21 @@
                 )}</td>
               </tr>`;
       html += "</table>";
-      document.getElementById("cart").innerHTML = html;
+      if (!isCartEmpty) {
+        document.getElementById("cart").innerHTML = html;
+      } else {
+        document.getElementById("cart").innerHTML = "";
+      }
     };
-    // window.onload = () => {
-    //   getProductDetails();
-    // };
+
+    const disableRemoveButtons = () => {
+      document.getElementById("remove-R01").disabled = true;
+      document.getElementById("remove-G01").disabled = true;
+      document.getElementById("remove-B01").disabled = true;
+    };
+
+    window.onload = () => {
+      disableRemoveButtons();
+    };
   </script>
 </html>
