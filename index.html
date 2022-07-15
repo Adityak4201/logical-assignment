@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logical Assignment</title>
+    <style>
+      table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      td,
+      th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <input
+        type="text"
+        value=""
+        id="#product"
+        placeholder="Enter product code"
+      />
+      <input type="button" value="Submit" onclick="addCartItems()" />
+    </div>
+    <br /><br />
+    <div id="cart"></div>
+  </body>
+  <script>
+    // const getProductDetails = async () => {
+    //   const response = await fetch("./product.json");
+    //   const productDetails = response.json();
+    //   return productDetails;
+    // };
+
+    class cartItemInterface {
+      #cartDetails = {
+        items: {},
+        redDiaperCount: 0,
+        itemsTotal: 0,
+        delivery: 0,
+      };
+      #productDetails = null;
+
+      constructor() {
+        this.#productDetails = {
+          R01: {
+            NAME: "Red Diaper",
+            PRICE: 32.95,
+          },
+          G01: {
+            NAME: "Green Diaper",
+            PRICE: 24.95,
+          },
+          B01: {
+            NAME: "Blue Diaper",
+            PRICE: 7.95,
+          },
+        };
+      }
+
+      // static async initializeProductDetails() {
+      //   this.#productDetails = await getProductDetails();
+      // }
+
+      #deliveryFeesRules(itemTotal) {
+        if (itemTotal < 50) {
+          return 4.95;
+        }
+        if (itemTotal < 90) {
+          return 2.95;
+        } else {
+          return 0;
+        }
+      }
+
+      #applyOffer(diaperCount, diaperValue) {
+        if (diaperCount % 2 === 0) {
+          return diaperValue / 2;
+        }
+        return diaperValue;
+      }
+
+      getProductDetails() {
+        return this.#productDetails;
+      }
+
+      getCartDetails() {
+        return this.#cartDetails;
+      }
+
+      addItemToCart(productCode) {
+        const productInfo = this.#productDetails[productCode];
+        if (this.#cartDetails.items[productCode]) {
+          this.#cartDetails.items[productCode] = {
+            ...this.#cartDetails.items[productCode],
+            quantity: this.#cartDetails.items[productCode].quantity + 1,
+          };
+        } else {
+          this.#cartDetails.items[productCode] = {
+            name: productInfo.NAME,
+            quantity: 1,
+            price: productInfo.PRICE,
+          };
+        }
+        this.#calculateCartTotal(productInfo, productCode);
+      }
+
+      #calculateCartTotal(productInfo, productCode) {
+        if (productCode === "R01") {
+          this.#cartDetails.redDiaperCount += 1;
+          this.#cartDetails.itemsTotal += this.#applyOffer(
+            this.#cartDetails.redDiaperCount,
+            this.#productDetails.R01.PRICE
+          );
+        } else {
+          this.#cartDetails.itemsTotal = parseFloat(
+            (this.#cartDetails.itemsTotal + productInfo.PRICE).toFixed(2)
+          );
+        }
+        const deliveryFees = this.#deliveryFeesRules(
+          this.#cartDetails.itemsTotal
+        );
+        this.#cartDetails.delivery = deliveryFees;
+      }
+    }
+
+    // const cartItemInterfaceAjax = function (url) {
+    //   this.url = url;
+    // };
+    // const cartItemInterfaceCookie = function () {};
+    // //Extend the cartItemInterface for Ajax
+    // cartItemInterfaceAjax.prototype = Object.create(cartItemInterface);
+    // //Extend the cartItemInterface for Cookie
+    // cartItemInterfaceCookie.prototype = Object.create(cartItemInterface);
+    // cartItemInterfaceAjax.prototype.addItem = function (item) {
+    //   //actual add item code
+    // };
+    // cartItemInterfaceCookie.prototype.addItem = function (item) {
+    //   //actual add item code
+    // };
+    // console.log(cartItemInterfaceAjax, cartItemInterfaceCookie.prototype);
+
+    // const cartController = function (cart) {
+    //   this.cart = cart;
+    // };
+
+    // cartController.prototype.add = function (item) {
+    //   cart.addItem(item);
+    // };
+
+    // const cart = new cartItemInterfaceAjax("url");
+    // const cartDetail = new cartController(cart);
+    // console.log(cart, cartDetail);
+    const cart = new cartItemInterface();
+    const addCartItems = () => {
+      const productCode = document.getElementById("#product").value;
+      cart.addItemToCart(productCode);
+      let html = `<h1>Cart Details</h1>
+                  <table>
+                    <tr>
+                      <th>Item Name</th>
+                      <th>Quantity</th>
+                      <th>Price</th>
+                    <tr>`;
+      const cartDetails = cart.getCartDetails();
+      console.log(cartDetails);
+      for (const productCode in cartDetails.items) {
+        let productAggregatePrice = (
+          cartDetails.items[productCode].price *
+          cartDetails.items[productCode].quantity
+        ).toFixed(2);
+        if (productCode === "R01" && cartDetails.redDiaperCount > 1) {
+          if (cartDetails.redDiaperCount % 2 === 0) {
+            productAggregatePrice = (
+              cartDetails.items[productCode].price *
+                (cartDetails.redDiaperCount / 2) +
+              (cartDetails.items[productCode].price *
+                cartDetails.redDiaperCount) /
+                4
+            ).toFixed(2);
+          } else {
+            productAggregatePrice = (
+              (cartDetails.items[productCode].price *
+                (cartDetails.redDiaperCount + 1)) /
+                2 +
+              (cartDetails.items[productCode].price *
+                (cartDetails.redDiaperCount - 1)) /
+                4
+            ).toFixed(2);
+          }
+        }
+        html += `<tr>
+                  <td>${cartDetails.items[productCode].name}</td>
+                  <td>${cartDetails.items[productCode].quantity}</td>
+                  <td>${productAggregatePrice}</td>
+                </tr>`;
+      }
+      html += `<tr>
+                <td></td>
+                <td>Delivery Charges</td>
+                <td>${cartDetails.delivery}</td>
+              </tr>`;
+      html += `<tr>
+                <td></td>
+                <td>Final Price</td>
+                <td>${(cartDetails.itemsTotal + cartDetails.delivery).toFixed(
+                  2
+                )}</td>
+              </tr>`;
+      html += "</table>";
+      document.getElementById("cart").innerHTML = html;
+    };
+    // window.onload = () => {
+    //   getProductDetails();
+    // };
+  </script>
+</html>

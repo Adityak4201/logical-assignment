@@ -1,0 +1,15 @@
+{
+  "R01": {
+    "CODE": "R01",
+    "PRICE": 32.95
+  },
+  "G01": {
+    "CODE": "G01",
+    "PRICE": 24.95
+  },
+  "B01": {
+    "NAME": "Blue-Diaper",
+    "CODE": "B01",
+    "PRICE": 7.95
+  }
+}
